@@ -11,6 +11,8 @@ g_Transformations = OrderedDict(
      ('blur', 7),
      ('norm_histogram', False),
      ('binarize', 128),
+     ('morphology', {'kernel': 3,
+                 'iterations': 1}),
      ('circles', {'scale': 1,
                   'param1': 1,
                   'param2': 100,
@@ -44,6 +46,17 @@ def norm_histogram(image, param):
     else:
         return image
 
+def morphology(image, params):
+    se_size = params['kernel']
+    iterations = params['iterations']
+
+    if iterations == 0:
+        return image
+    
+    se = cv.getStructuringElement(cv.MORPH_RECT, (se_size, se_size))
+    return cv.erode(image, se, iterations=iterations)
+
+
 def hough_circles(image, params):
     circles = cv.HoughCircles(image, cv.HOUGH_GRADIENT, params['scale'], 400,
                               param1=params['param1'], param2=params['param2'],
@@ -65,7 +78,8 @@ TRANSFORMS = {
     'blur': gaussian_blur,
     'binarize': threshold,
     'norm_histogram': norm_histogram,
-    'circles': hough_circles}
+    'circles': hough_circles,
+    'morphology': morphology}
 
 
 def apply_transformations(input_image, transformations):
@@ -90,9 +104,11 @@ def update_image(source_image, transformations):
 def is_subattribute(param_name):
     return '/' in param_name
 
+
 def split_subattribute(param_name):
     return param_name.split('/')
-    
+
+
 def control_callback(image, tr_kind, tr_param):
     global g_Transformations
     if is_subattribute(tr_kind):
@@ -136,11 +152,18 @@ controls = [
     {'name': 'eq hist', 'max': 1, 'attr': 'norm_histogram'},
     {'name': 'binarize', 'min': 1, 'attr': 'binarize'},
 
+    # Morphology controls
+    {'name': 'Morphology kernel size', 'min': 1, 'max': 10, 'attr': 'morphology/kernel'},
+    {'name': 'Number of iterations', 'min': 1, 'max': 20, 'attr': 'morphology/iterations'},
+
+    # Hough controls
     {'name': 'circles scale', 'min': 1, 'max': 10, 'attr': 'circles/scale'},
     {'name': 'circles param1', 'min': 1, 'max': 20, 'attr': 'circles/param1'},
     {'name': 'circles param2', 'min': 1, 'max': 1000, 'attr': 'circles/param2'},
     {'name': 'circles min radius', 'min': 200, 'max': 3000, 'attr': 'circles/min_radius'},
     {'name': 'circles max radius', 'min': 200, 'max': 3000, 'attr': 'circles/max_radius'},
+
+    
 ]
 
 build_ui(sample_image, controls)
